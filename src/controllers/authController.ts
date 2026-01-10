@@ -28,3 +28,19 @@ export const login = async (req: Request, res: Response) => {
     res.status(401).json({ error: error.message });
   }
 };
+// ... (keep existing login/register imports)
+
+export const registerEmployee = async (req: Request, res: Response) => {
+  try {
+    const result = await authService.registerEmployee(req.body);
+    res.status(201).json(result);
+  } catch (error: any) {
+    console.error("Employee Registration Error:", error);
+    // Handle unique constraint violations (like duplicate NIC or Username)
+    if (error.code === 'P2002') {
+        res.status(409).json({ error: "Username, Email, or NIC already exists." });
+    } else {
+        res.status(400).json({ error: error.message });
+    }
+  }
+};
