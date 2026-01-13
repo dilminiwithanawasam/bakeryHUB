@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import { getDashboardStats } from '../controllers/factoryController';
 import { authenticateToken, authorizeRole } from '../middlewares/authMiddleware';
-
+import * as factoryController from '../controllers/factoryController';
 
 const router = Router();
 
-// Protect this route: Only Factory or Admin can see it
-router.get('/stats', authenticateToken, authorizeRole(['FACTORY_DISTRIBUTOR', 'ADMIN']), getDashboardStats);
+router.use(authenticateToken, authorizeRole(['FACTORY_DISTRIBUTOR', 'ADMIN']));
 
+// Define Factory Routes
+router.get('/stats', factoryController.getDashboardStats); // matches /api/factory/stats
+router.post('/create-batch', factoryController.createBatch); // matches /api/factory/create-batch
 
 export default router;

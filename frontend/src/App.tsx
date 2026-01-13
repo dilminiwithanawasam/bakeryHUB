@@ -7,6 +7,7 @@ import POSDashboard from './pages/dashboards/POSDashboard';
 import AdminDashboard from './pages/dashboards/AdminDashboard';
 import FactoryDashboard from './pages/dashboards/FactoryDashboard';
 import BatchEntry from './pages/factory/BatchEntry';
+import AddProduct from './pages/factory/addProduct';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/pos" element={<POSDashboard />} />
         <Route path="/factory" element={<FactoryDashboard />} />
         <Route path="/factory/BatchEntry" element={<BatchEntry/>}/>
+        <Route path="/factory/AddProduct" element={<AddProduct/>}/>
         
         {/* Default Redirect: If someone goes to root /, send them to login */}
         <Route path="/" element={<Navigate to="/login" />} />

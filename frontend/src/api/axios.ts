@@ -1,17 +1,29 @@
 import axios from 'axios';
 
-// Create a central api handler
+// 1. Create the Axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api', // Points to your Node.js backend
+    // Ensure this matches your Backend Port (3000 based on your error log)
+    baseURL: 'http://localhost:3000/api', 
+    headers: {
+        'Content-Type': 'application/json'
+    }
 });
 
-// Middleware: Attach the Token to every request if we have one
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// 2. Add the Interceptor (The "Key" Attacher)
+api.interceptors.request.use(
+    (config) => {
+        // Retrieve the token from Local Storage (saved during Login)
+        const token = localStorage.getItem('token'); 
+        
+        if (token) {
+            // Attach token to the Authorization header
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
 export default api;

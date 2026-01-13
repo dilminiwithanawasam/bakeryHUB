@@ -1,18 +1,14 @@
 import { Router } from 'express';
-import * as productController from '../controllers/productController';
 import { authenticateToken, authorizeRole } from '../middlewares/authMiddleware';
+import * as productController from '../controllers/productController';
 
 const router = Router();
 
-// PUBLIC ROUTE: Anyone can see products
-router.get('/', productController.getProducts);
+// Protect routes
+router.use(authenticateToken, authorizeRole(['FACTORY_DISTRIBUTOR', 'ADMIN']));
 
-// RBAC PROTECTED ROUTE: Only Factory or Admin can create products
-router.post(
-  '/', 
-  authenticateToken,                   // 1. Must be logged in
-  authorizeRole(['FACTORY_DISTRIBUTOR', 'ADMIN']), // 2. Must have specific role
-  productController.createProduct      // 3. Execute logic
-);
+// Define Product Routes
+router.get('/', productController.getProducts);           // matches /api/products
+router.post('/add', productController.createProduct);     // matches /api/products/add
 
 export default router;
