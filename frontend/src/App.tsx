@@ -7,7 +7,7 @@ import POSDashboard from './pages/dashboards/POSDashboard';
 import AdminDashboard from './pages/dashboards/AdminDashboard';
 import FactoryDashboard from './pages/dashboards/FactoryDashboard';
 import BatchEntry from './pages/factory/BatchEntry';
-import AddProduct from './pages/factory/addProduct';
+import AddProduct from './pages/factory/AddProduct';
 
 function App() {
   return (
