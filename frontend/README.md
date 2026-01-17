@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# 🍞 Bakery HUB  
+### Bakery Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Bakery HUB is a web-based Bakery Management System developed to automate bakery operations such as sales, inventory management, factory distribution, and online customer ordering. The system replaces manual billing and stock handling with a centralized digital solution.
 
-Currently, two official plugins are available:
+This project is developed as part of **IS 3920 – Individual Project on Business Solutions** at the **University of Moratuwa**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 📌 Overview
+Traditional bakery operations suffer from manual billing errors, poor inventory visibility, and disconnected factory–outlet communication. Bakery HUB addresses these problems by providing a real-time, role-based system that manages the entire bakery workflow from production to customer pickup.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🏗 System Architecture
+The system follows a **Three-Tier Monolithic Architecture**:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend:** React (Vite) + Tailwind CSS  
+- **Backend:** Django + Django REST Framework  
+- **Database:** PostgreSQL  
+- **Storage:** AWS S3 for images and design uploads  
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+All communication is handled via **RESTful APIs over HTTPS** using **JSON**.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## ✨ Key Features
+- Secure authentication with **JWT** and **Role-Based Access Control**
+- Automated **Point of Sale (POS)** system
+- Real-time **inventory and expiry management**
+- Factory batch creation and outlet dispatching
+- Online **advance cake ordering** with customization
+- Sales and outlet performance **reports**
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 👥 User Roles
+- **Admin:** System and user management  
+- **Manager:** View reports and outlet performance  
+- **Salesperson:** POS operations and outlet stock handling  
+- **Factory Distributor:** Batch management and dispatching  
+- **Customer:** Online ordering and order tracking  
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
+
+## 🛠 Technology Stack
+- **Frontend:** React, Tailwind CSS  
+- **Backend:** Python 3.10+, Django, Django REST Framework  
+- **Database:** PostgreSQL  
+- **Deployment:** AWS Cloud  
+
+---
+
+## 📈 Business Rules
+- Cake orders must be placed **at least 24 hours in advance**
+- Pickup only (no delivery)
+- Orders are confirmed only after successful payment
+- Expired or near-expiry items cannot be sold
+
+---
+
+## 📚 Documentation
+- Software Requirements Specification (SRS)
+- User Manual for staff
+- Technical documentation with UML diagrams
+
+---
+
+## 👨‍💻 Contributor
+**D.C. Withanawasam**  
+Faculty of Information Technology  
+University of Moratuwa
+
+---
+
+## 📄 License
+This project is developed for **academic purposes only**.  
+© 2025 All Rights Reserved.
