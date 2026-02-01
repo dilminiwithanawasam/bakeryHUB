@@ -1,14 +1,33 @@
-from rest_framework import permissions
+from rest_framework.permissions import BasePermission
+from core.models import RoleType
 
-class IsAdmin(permissions.BasePermission):
+class IsEmployee(BasePermission):
+    """
+    Allows access to any staff member (Admin, Manager, Sales, Factory).
+    Blocks Customers.
+    """
     def has_permission(self, request, view):
-        # Allow if logged in AND role is ADMIN
-        return request.user.is_authenticated and request.user.role.role_name == 'ADMIN'
+        # We use the helper property .is_employee we defined in models.py
+        return bool(request.user and request.user.is_authenticated and request.user.is_employee)
 
-class IsFactoryDistributor(permissions.BasePermission):
+class IsAdmin(BasePermission):
+    """
+    Allows access ONLY to Admins.
+    """
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role.role_name == 'FACTORY_DISTRIBUTOR'
+        return bool(request.user and request.user.is_authenticated and request.user.role == RoleType.ADMIN)
 
-class IsSalesperson(permissions.BasePermission):
+class IsManagerOrOwner(BasePermission):
+    """
+    Allows access to Managers, Owners, and Admins.
+    """
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role.role_name == 'SALESPERSON'
+        allowed_roles = [RoleType.MANAGER, RoleType.OWNER, RoleType.ADMIN]
+        return bool(request.user and request.user.is_authenticated and request.user.role in allowed_roles)
+
+class IsCustomer(BasePermission):
+    """
+    Allows access ONLY to Customers.
+    """
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.role == RoleType.CUSTOMER)

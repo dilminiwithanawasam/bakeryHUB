@@ -7,219 +7,225 @@ const AddProduct = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  // Form State matches your Prisma 'products' model
   const [formData, setFormData] = useState({
     product_name: '',
     description: '',
     category: '',
     base_price: '',
     shelf_life_days: '',
-    measurement_type: 'PCS' // Default value matching your Enum
+    measurement_type: 'PCS'
   });
 
-  // Handle text and select changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // ---------------------------------------------------------
-      // UPDATED: Point to the new Product Controller Route
-      // Old: /factory/add-product
-      // New: /products/add (Matches routes/productRoutes.ts)
-      // ---------------------------------------------------------
-      await api.post('/products/add', formData);
-      
-      alert("✅ Product Created Successfully!");
-      
-      // Redirect back to Batch Entry so you can immediately add stock for this new product
-      navigate('/factory/BatchEntry'); 
-      
+      await api.post('/products/', formData);
+      alert('✅ Product Created Successfully!');
+      navigate('/factory/BatchEntry');
     } catch (error: any) {
-      console.error("Submission Error:", error);
-      // The backend now returns detailed errors (e.g., "Price must be greater than 0")
-      const errorMessage = error.response?.data?.error || "Failed to create product.";
-      const errorDetails = error.response?.data?.details || ""; // Extra details if available
-      
-      alert(`❌ Error: ${errorMessage} \n${errorDetails}`);
+      const errorMessage = error.response?.data?.error || 'Failed to create product.';
+      const errorDetails = error.response?.data?.details || '';
+      alert(`❌ ${errorMessage}\n${errorDetails}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* 1. Sidebar Component */}
+    <div className="flex min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100">
       <Sidebar />
-      
-      {/* 2. Main Content Area */}
-      <main className="flex-1 ml-64 p-12 bg-white">
-        
-        {/* --- Top Toggle Tabs (Batch / Product) --- */}
-        {/* This mimics the look from BatchEntry but highlights 'Product' */}
-        <div className="flex w-full max-w-2xl mb-10 shadow-sm rounded-md overflow-hidden">
-            <div 
-              onClick={() => navigate('/factory/BatchEntry')}
-              className="flex-1 bg-gray-300 text-gray-700 font-medium py-3 text-center cursor-pointer hover:bg-gray-400 transition">
-                Batch
-            </div>
-            <div className="flex-1 bg-gray-600 text-gray-200 font-medium py-3 text-center cursor-default">
-                Product
-            </div>
+
+      <main className="flex-1 ml-64 p-12">
+
+        {/* Toggle Tabs */}
+        <div className="flex max-w-3xl mb-10 rounded-xl overflow-hidden shadow-md">
+          <div
+            onClick={() => navigate('/factory/BatchEntry')}
+            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 font-semibold text-center cursor-pointer transition"
+          >
+            Batch
+          </div>
+          <div className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 font-semibold text-center">
+            Product
+          </div>
         </div>
 
-        {/* --- Main Entry Card --- */}
-        <div className="border border-gray-300 rounded-2xl shadow-xl bg-white relative max-w-4xl">
-            
-            {/* Header */}
-            <div className="border-b border-gray-200 p-8">
-                <h2 className="text-3xl font-normal text-black tracking-wide">Add New Product</h2>
+        {/* Page Header with View Products Button */}
+        <div className="max-w-5xl mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-800">
+              Add New Product 📦
+            </h1>
+            <p className="text-gray-500 mt-1 text-sm">
+              Define product details before adding stock to the factory
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/factory/ProductList')}
+            className="text-orange-600 hover:text-orange-800 font-semibold transition underline-offset-4 hover:to-orange-950"
+
+          >
+            📋 View Products
+          </button>
+        </div>
+
+        {/* Main Card */}
+        <div className="max-w-5xl bg-white rounded-3xl shadow-2xl border border-orange-200">
+
+          <div className="border-b p-8">
+            <p className="text-gray-600 text-sm">
+              All products created here will be available for batch production.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-10 space-y-8">
+
+            <Field label="Product Name">
+              <input
+                name="product_name"
+                value={formData.product_name}
+                onChange={handleChange}
+                className="input"
+                placeholder="Chocolate Brownie"
+                required
+              />
+            </Field>
+
+            <Field label="Description">
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={2}
+                className="input resize-none"
+                placeholder="Short description of the product"
+              />
+            </Field>
+
+            {/* Category + Unit */}
+            <div className="grid grid-cols-12 gap-6">
+              <div className="col-span-6">
+                <FieldInline label="Category">
+                  <input
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    className="input"
+                    placeholder="Cakes"
+                    required
+                  />
+                </FieldInline>
+              </div>
+
+              <div className="col-span-6">
+                <FieldInline label="Unit">
+                  <select
+                    name="measurement_type"
+                    value={formData.measurement_type}
+                    onChange={handleChange}
+                    className="input cursor-pointer"
+                  >
+                    <option value="PCS">PCS</option>
+                    <option value="KG">KG</option>
+                    <option value="BOX">BOX</option>
+                    <option value="LITRE">LITRE</option>
+                  </select>
+                </FieldInline>
+              </div>
             </div>
 
-            {/* Form Fields */}
-            <form onSubmit={handleSubmit} className="p-10 space-y-8">
-                
-                {/* 1. Product Name */}
-                <div className="grid grid-cols-12 items-center gap-6">
-                    <label className="col-span-3 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                        Product Name
-                    </label>
-                    <div className="col-span-9">
-                        <input 
-                            name="product_name"
-                            value={formData.product_name} 
-                            onChange={handleChange}
-                            className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none transition" 
-                            placeholder="e.g. Chocolate Brownie"
-                            required
-                        />
-                    </div>
-                </div>
+            <Field label="Base Price (LKR)">
+              <input
+                type="number"
+                step="0.01"
+                name="base_price"
+                value={formData.base_price}
+                onChange={handleChange}
+                className="input"
+                placeholder="0.00"
+                required
+              />
+            </Field>
 
-                {/* 2. Description */}
-                <div className="grid grid-cols-12 items-center gap-6">
-                    <label className="col-span-3 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                        Description
-                    </label>
-                    <div className="col-span-9">
-                        <textarea 
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            rows={2}
-                            className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none transition"
-                            placeholder="Short description of the item..."
-                        />
-                    </div>
-                </div>
+            <Field label="Shelf Life (Days)">
+              <input
+                type="number"
+                name="shelf_life_days"
+                value={formData.shelf_life_days}
+                onChange={handleChange}
+                className="input bg-orange-50"
+                placeholder="e.g. 5"
+                required
+              />
+              <p className="text-xs text-orange-600 mt-2">
+                ⓘ Used to auto-calculate expiry date during batch creation
+              </p>
+            </Field>
 
-                {/* 3. Category & Unit (Side by Side) */}
-                <div className="grid grid-cols-12 gap-6">
-                    {/* Category */}
-                    <div className="col-span-6 grid grid-cols-12 items-center gap-2">
-                         <label className="col-span-4 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                            Category
-                         </label>
-                         <div className="col-span-8">
-                            <input 
-                                name="category" 
-                                value={formData.category} 
-                                onChange={handleChange}
-                                className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none" 
-                                placeholder="e.g. Cakes"
-                                required
-                            />
-                         </div>
-                    </div>
+            {/* Actions */}
+            <div className="flex justify-end gap-4 pt-6">
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-10 py-3 rounded-xl font-bold shadow-lg transition disabled:opacity-60"
+              >
+                {loading ? 'Creating…' : 'Create Product'}
+              </button>
 
-                    {/* Measurement Type (Enum) */}
-                    <div className="col-span-6 grid grid-cols-12 items-center gap-2">
-                         <label className="col-span-4 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                            Unit
-                         </label>
-                         <div className="col-span-8">
-                            <select 
-                                name="measurement_type" 
-                                value={formData.measurement_type} 
-                                onChange={handleChange}
-                                className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none cursor-pointer"
-                            >
-                                <option value="PCS">PCS</option>
-                                <option value="KG">KG</option>
-                                <option value="BOX">BOX</option>
-                                <option value="LITRE">LITRE</option>
-                            </select>
-                         </div>
-                    </div>
-                </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    product_name: '',
+                    description: '',
+                    category: '',
+                    base_price: '',
+                    shelf_life_days: '',
+                    measurement_type: 'PCS'
+                  })
+                }
+                className="w-12 h-12 rounded-xl bg-gray-200 hover:bg-gray-300 text-xl font-bold shadow transition"
+                title="Reset Form"
+              >
+                ↺
+              </button>
+            </div>
 
-                {/* 4. Base Price */}
-                <div className="grid grid-cols-12 items-center gap-6">
-                    <label className="col-span-3 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                        Base Price (LKR)
-                    </label>
-                    <div className="col-span-9">
-                        <input 
-                            type="number" 
-                            step="0.01" 
-                            name="base_price" 
-                            value={formData.base_price} 
-                            onChange={handleChange}
-                            className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none" 
-                            placeholder="0.00"
-                            required
-                        />
-                    </div>
-                </div>
-
-                {/* 5. Shelf Life */}
-                <div className="grid grid-cols-12 items-center gap-6">
-                    <label className="col-span-3 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                        Shelf Life (Days)
-                    </label>
-                    <div className="col-span-9">
-                        <input 
-                            type="number" 
-                            name="shelf_life_days" 
-                            value={formData.shelf_life_days} 
-                            onChange={handleChange}
-                            className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none" 
-                            placeholder="e.g. 5"
-                            required
-                        />
-                    </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end items-center gap-4 mt-12 pt-4">
-                    <button 
-                        type="submit" 
-                        disabled={loading}
-                        className={`bg-[#D98850] hover:bg-[#c27640] text-white font-bold py-3 px-8 rounded shadow-md uppercase text-sm tracking-wide transition transform active:scale-95 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    >
-                        {loading ? 'Creating...' : 'Create Product'}
-                    </button>
-                    
-                    <button 
-                        type="button"
-                        onClick={() => setFormData({ product_name: '', description: '', category: '', base_price: '', shelf_life_days: '', measurement_type: 'PCS' })}
-                        className="bg-[#D98850] hover:bg-[#c27640] text-white font-bold h-12 w-12 rounded flex items-center justify-center shadow-md text-2xl transition transform active:scale-95"
-                        title="Reset Form"
-                    >
-                        ↻
-                    </button>
-                </div>
-
-            </form>
+          </form>
         </div>
       </main>
     </div>
   );
 };
+
+/* Helpers */
+const Field = ({ label, children }: any) => (
+  <div className="grid grid-cols-12 gap-6 items-start">
+    <label className="col-span-3 text-right text-xs font-bold uppercase text-gray-500 tracking-wide pt-3">
+      {label}
+    </label>
+    <div className="col-span-9">{children}</div>
+  </div>
+);
+
+const FieldInline = ({ label, children }: any) => (
+  <div className="grid grid-cols-12 gap-2 items-center">
+    <label className="col-span-4 text-right text-xs font-bold uppercase text-gray-500 tracking-wide">
+      {label}
+    </label>
+    <div className="col-span-8">{children}</div>
+  </div>
+);
+
+const input =
+  "w-full p-3 rounded-lg bg-gray-100 focus:bg-white border border-transparent focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition";
 
 export default AddProduct;

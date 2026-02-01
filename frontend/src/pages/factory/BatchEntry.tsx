@@ -3,20 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import api from '../../api/axios';
 
-// 1. Updated Interface to include shelf_life_days
 interface Product {
   product_id: number;
   product_name: string;
-  shelf_life_days: number; // Required for calculation
+  shelf_life_days: number;
+  category: string; // Added category field
 }
 
 const BatchEntry = () => {
   const navigate = useNavigate();
-  
-  // Helper: Get Today's Date in YYYY-MM-DD format
+
   const getTodayDate = () => new Date().toISOString().split('T')[0];
 
-  // Helper: Add days to a date string
   const calculateExpiry = (startDate: string, days: number): string => {
     if (!startDate || !days) return '';
     const date = new Date(startDate);
@@ -24,101 +22,121 @@ const BatchEntry = () => {
     return date.toISOString().split('T')[0];
   };
 
+  // Hardcoded categories
+  const hardcodedCategories = [
+    'Cakes',
+    'Brownies',
+    'Pastries',
+    'Breads',
+    'Cookies',
+    'Muffins',
+    'Desserts',
+    'Savory',
+    'Seasonal',
+    'Special'
+  ];
+
   const [productList, setProductList] = useState<Product[]>([]);
-  
-  // 2. Initialize State with MFD set to Today
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
+
   const [formData, setFormData] = useState({
-    product_id: '', 
+    product_id: '',
     batch_code: '',
     quantity: '',
     mfd: getTodayDate(),
     exp: ''
   });
 
-  const [loading, setLoading] = useState(false);
-
-  // Fetch Products
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await api.get('/products'); 
-        setProductList(res.data);
-      } catch (err) {
-        console.error("Failed to load products for dropdown");
-      }
-    };
-    fetchProducts();
+    // Hardcoded product data instead of API call
+    const hardcodedProducts: Product[] = [
+      { product_id: 1, product_name: 'Chocolate Brownie', shelf_life_days: 7, category: 'Brownies' },
+      { product_id: 2, product_name: 'Vanilla Cake', shelf_life_days: 5, category: 'Cakes' },
+      { product_id: 3, product_name: 'Red Velvet Cake', shelf_life_days: 5, category: 'Cakes' },
+      { product_id: 4, product_name: 'Croissant', shelf_life_days: 3, category: 'Pastries' },
+      { product_id: 5, product_name: 'Whole Wheat Bread', shelf_life_days: 4, category: 'Breads' },
+      { product_id: 6, product_name: 'Blueberry Muffin', shelf_life_days: 4, category: 'Muffins' },
+      { product_id: 7, product_name: 'Chocolate Chip Cookies', shelf_life_days: 14, category: 'Cookies' },
+      { product_id: 8, product_name: 'Cinnamon Roll', shelf_life_days: 3, category: 'Pastries' },
+      { product_id: 9, product_name: 'Baguette', shelf_life_days: 2, category: 'Breads' },
+      { product_id: 10, product_name: 'Carrot Cake', shelf_life_days: 6, category: 'Cakes' },
+    ];
+    
+    setProductList(hardcodedProducts);
+    setFilteredProducts(hardcodedProducts); // Initially show all products
   }, []);
 
-  // ---------------------------------------------------------
-  // SPECIAL HANDLERS FOR AUTO-CALCULATION
-  // ---------------------------------------------------------
+  // Filter products when category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      const filtered = productList.filter(product => 
+        product.category.toLowerCase() === selectedCategory.toLowerCase()
+      );
+      setFilteredProducts(filtered);
+      
+      // Reset product selection if selected product is not in filtered list
+      if (formData.product_id && !filtered.some(p => p.product_id === parseInt(formData.product_id))) {
+        setFormData(prev => ({ ...prev, product_id: '', exp: '' }));
+      }
+    } else {
+      setFilteredProducts(productList);
+    }
+  }, [selectedCategory, productList]);
 
-  // A. When Product Changes -> Find Shelf Life -> Update Expiry
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCategory(e.target.value);
+  };
+
   const handleProductChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newProductId = e.target.value;
-    const selectedProduct = productList.find(p => p.product_id === parseInt(newProductId));
+    const selectedProduct = productList.find(
+      p => p.product_id === parseInt(newProductId)
+    );
 
-    setFormData(prev => {
-        // Calculate new expiry based on current MFD + Product Shelf Life
-        const newExp = selectedProduct 
-            ? calculateExpiry(prev.mfd, selectedProduct.shelf_life_days)
-            : prev.exp;
-
-        return {
-            ...prev,
-            product_id: newProductId,
-            exp: newExp
-        };
-    });
+    setFormData(prev => ({
+      ...prev,
+      product_id: newProductId,
+      exp: selectedProduct
+        ? calculateExpiry(prev.mfd, selectedProduct.shelf_life_days)
+        : prev.exp
+    }));
   };
 
-  // B. When MFD Changes -> Find Current Product Shelf Life -> Update Expiry
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMfd = e.target.value;
-    const currentProduct = productList.find(p => p.product_id === parseInt(formData.product_id));
+    const currentProduct = productList.find(
+      p => p.product_id === parseInt(formData.product_id)
+    );
 
-    setFormData(prev => {
-        // Calculate new expiry based on New MFD + Current Product Shelf Life
-        const newExp = currentProduct 
-            ? calculateExpiry(newMfd, currentProduct.shelf_life_days)
-            : prev.exp;
-
-        return {
-            ...prev,
-            mfd: newMfd,
-            exp: newExp
-        };
-    });
+    setFormData(prev => ({
+      ...prev,
+      mfd: newMfd,
+      exp: currentProduct
+        ? calculateExpiry(newMfd, currentProduct.shelf_life_days)
+        : prev.exp
+    }));
   };
 
-  // C. Standard Handler for other inputs (Batch Code, Quantity, Manual Exp override)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
-  // ---------------------------------------------------------
-  // SUBMISSION
-  // ---------------------------------------------------------
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const payload = {
+      await api.post('/factory/create-batch/', {
         product_id: parseInt(formData.product_id),
         batch_code: formData.batch_code,
         quantity: parseInt(formData.quantity),
         mfd: formData.mfd,
         exp: formData.exp
-      };
+      });
 
-      await api.post('/factory/create-batch', payload);
-      
-      alert("✅ Batch Added to System Stock Successfully!");
-      
-      // Clear form (Reset MFD to today)
+      alert('✅ Batch Added Successfully!');
       setFormData({
         product_id: '',
         batch_code: '',
@@ -126,175 +144,227 @@ const BatchEntry = () => {
         mfd: getTodayDate(),
         exp: ''
       });
-      
     } catch (error: any) {
-      console.error("Submission Error:", error);
-      const errorMessage = error.response?.data?.error || "Failed to add batch.";
-      alert(`❌ Error: ${errorMessage}`);
+      alert(`❌ ${error.response?.data?.error || 'Failed to add batch'}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100">
       <Sidebar />
-      
-      <main className="flex-1 ml-64 p-12 bg-white">
-        
-        {/* Toggle Tabs */}
-        <div className="flex w-full max-w-2xl mb-10 shadow-sm rounded-md overflow-hidden">
-            <div className="flex-1 bg-gray-600 text-gray-200 font-medium py-3 text-center cursor-default">
-                Batch
-            </div>
-            <div 
-                onClick={() => navigate('/factory/AddProduct')}
-                className="flex-1 bg-gray-300 text-gray-700 font-medium py-3 text-center cursor-pointer hover:bg-gray-400 transition"
-            >
-                Product
-            </div>
+
+      <main className="flex-1 ml-64 p-12">
+
+        {/* Tabs */}
+        <div className="flex max-w-3xl mb-10 rounded-xl overflow-hidden shadow-md">
+          <div className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 font-semibold text-center">
+            Batch Entry
+          </div>
+          <div
+            onClick={() => navigate('/factory/AddProduct')}
+            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 font-semibold text-center cursor-pointer transition"
+          >
+            Product
+          </div>
         </div>
 
-        {/* View History Button */}
-        <div className="flex justify-end mb-6 max-w-4xl">
-            <button 
-              className="bg-[#D98850] hover:bg-[#c27640] text-white font-bold py-2 px-6 rounded shadow-md uppercase text-xs tracking-wide transition"
-              onClick={() => alert("Batch History Feature coming soon!")}
+        {/* Header */}
+        <div className="flex justify-between items-center max-w-5xl mb-6">
+          <h1 className="text-3xl font-extrabold text-gray-800">
+            Add Production Batch 🏭
+          </h1>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate('/factory/BatchList')}
+             className="text-orange-600 font-semibold transition-colors hover:text-orange-800 active:text-red-600 cursor-pointer"
+
             >
-                View Batch History
+              View Batch List
             </button>
+            
+          </div>
         </div>
 
-        {/* Main Entry Card */}
-        <div className="border border-gray-300 rounded-2xl shadow-xl bg-white relative max-w-4xl">
-            
-            <div className="border-b border-gray-200 p-8 flex justify-between items-center relative">
-                <h2 className="text-3xl font-normal text-black tracking-wide">Batch Entry</h2>
+        {/* Card */}
+        <div className="max-w-5xl bg-white rounded-3xl shadow-2xl border border-orange-200">
+          <div className="border-b p-8">
+            <p className="text-gray-500 text-sm">
+              Enter batch details. Expiry date is calculated automatically.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-10 space-y-8">
+
+            {/* Category Filter */}
+            <Field label="Filter by Category">
+              <div className="flex gap-4">
+                <select
+                  value={selectedCategory}
+                  onChange={handleCategoryChange}
+                  className="input flex-1"
+                >
+                  <option value="">All Categories</option>
+                  {hardcodedCategories.map(category => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory('')}
+                  className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition whitespace-nowrap"
+                >
+                  Clear Filter
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Filter products by category to find products faster
+              </p>
+            </Field>
+
+            {/* Product Selection */}
+            <Field label="Product">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm text-gray-600">
+                    Available Products: {filteredProducts.length}
+                  </span>
+                  {selectedCategory && (
+                    <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">
+                      Filtered by: {selectedCategory}
+                    </span>
+                  )}
+                </div>
+                <select
+                  value={formData.product_id}
+                  onChange={handleProductChange}
+                  className="input"
+                  required
+                  disabled={filteredProducts.length === 0}
+                >
+                  <option value="">{filteredProducts.length === 0 ? 'No products in this category' : 'Select product'}</option>
+                  {filteredProducts.map(p => (
+                    <option key={p.product_id} value={p.product_id}>
+                      {p.product_name} ({p.category}) - Shelf life: {p.shelf_life_days} days
+                    </option>
+                  ))}
+                </select>
+                {filteredProducts.length === 0 && (
+                  <p className="text-sm text-orange-600">
+                    No products found in this category. Try selecting a different category.
+                  </p>
+                )}
+              </div>
+            </Field>
+
+            <Field label="Batch Code">
+              <input
+                name="batch_code"
+                value={formData.batch_code}
+                onChange={handleChange}
+                className="input"
+                placeholder="B-001"
+                required
+              />
+            </Field>
+
+            <Field label="Quantity Produced">
+              <input
+                type="number"
+                name="quantity"
+                value={formData.quantity}
+                onChange={handleChange}
+                className="input"
+                placeholder="50"
+                required
+              />
+            </Field>
+
+            <Field label="Manufactured Date">
+              <input
+                type="date"
+                value={formData.mfd}
+                onChange={handleDateChange}
+                className="input"
+                required
+              />
+            </Field>
+
+            <Field label="Expiry Date">
+              <div className="space-y-2">
+                <input
+                  type="date"
+                  name="exp"
+                  value={formData.exp}
+                  onChange={handleChange}
+                  className="input bg-orange-50"
+                  required
+                  readOnly
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-orange-600">
+                    ⓘ Auto-calculated from shelf life
+                  </span>
+                  {formData.product_id && (
+                    <span className="text-xs text-gray-600">
+                      Based on {productList.find(p => p.product_id === parseInt(formData.product_id))?.shelf_life_days || 0} days shelf life
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Field>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-4 pt-6">
+              <button
+                type="submit"
+                disabled={loading || !formData.product_id}
+                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-10 py-3 rounded-xl font-bold shadow-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Saving…' : 'Add Batch'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({
+                    product_id: '',
+                    batch_code: '',
+                    quantity: '',
+                    mfd: getTodayDate(),
+                    exp: ''
+                  });
+                  setSelectedCategory('');
+                }}
+                className="w-12 h-12 rounded-xl bg-gray-200 hover:bg-gray-300 text-xl font-bold shadow transition"
+                title="Reset Form"
+              >
+                ↺
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-10 space-y-8">
-                
-                {/* 1. Product Selection (Uses handleProductChange) */}
-                <div className="grid grid-cols-12 items-center gap-6">
-                    <label className="col-span-3 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                        Select Product
-                    </label>
-                    <div className="col-span-9">
-                        <select 
-                            name="product_id"
-                            value={formData.product_id} 
-                            onChange={handleProductChange} // <--- Linked here
-                            className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none transition cursor-pointer" 
-                            required
-                        >
-                            <option value="">-- Choose a Product --</option>
-                            {productList.map((prod) => (
-                                <option key={prod.product_id} value={prod.product_id}>
-                                    {prod.product_name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* Batch No */}
-                <div className="grid grid-cols-12 items-center gap-6">
-                    <label className="col-span-3 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                        Batch No
-                    </label>
-                    <div className="col-span-9">
-                        <input 
-                            name="batch_code"
-                            value={formData.batch_code}
-                            onChange={handleChange}
-                            className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none transition"
-                            placeholder="e.g. B-001"
-                            required
-                        />
-                    </div>
-                </div>
-
-                {/* Quantity */}
-                <div className="grid grid-cols-12 items-center gap-6">
-                    <label className="col-span-3 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                        Quantity Produced
-                    </label>
-                    <div className="col-span-9">
-                        <input 
-                            type="number"
-                            name="quantity"
-                            value={formData.quantity}
-                            onChange={handleChange}
-                            className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none transition"
-                            placeholder="e.g. 50"
-                            required
-                        />
-                    </div>
-                </div>
-
-                {/* 2. Manufactured Date (Uses handleDateChange) */}
-                <div className="grid grid-cols-12 items-center gap-6">
-                    <label className="col-span-3 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                        Manufactured Date
-                    </label>
-                    <div className="col-span-9">
-                        <input 
-                            type="date"
-                            name="mfd"
-                            value={formData.mfd}
-                            onChange={handleDateChange} // <--- Linked here
-                            className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none text-gray-600 transition"
-                            required
-                        />
-                    </div>
-                </div>
-
-                {/* 3. Expiry Date (Auto-Calculated) */}
-                <div className="grid grid-cols-12 items-center gap-6">
-                    <label className="col-span-3 text-right font-bold text-gray-600 uppercase text-xs tracking-wider">
-                        Expiry Date
-                    </label>
-                    <div className="col-span-9">
-                        <input 
-                            type="date"
-                            name="exp"
-                            value={formData.exp}
-                            onChange={handleChange} // Allows manual override if necessary
-                            className="w-full bg-gray-200 border-none rounded-md p-3 focus:ring-2 focus:ring-[#D98850] outline-none text-gray-600 transition"
-                            required
-                        />
-                        <p className="text-xs text-gray-500 mt-2 text-right">
-                           * Auto-calculated based on product shelf life
-                        </p>
-                    </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end items-center gap-4 mt-12 pt-4">
-                    <button 
-                        type="submit"
-                        disabled={loading}
-                        className={`bg-[#D98850] hover:bg-[#c27640] text-white font-bold py-3 px-8 rounded shadow-md uppercase text-sm tracking-wide transition transform active:scale-95 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    >
-                        {loading ? 'Saving...' : 'Add to System Stock'}
-                    </button>
-                    
-                    <button 
-                        type="button"
-                        onClick={() => setFormData({ product_id: '', batch_code: '', quantity: '', mfd: getTodayDate(), exp: '' })}
-                        className="bg-[#D98850] hover:bg-[#c27640] text-white font-bold h-12 w-12 rounded flex items-center justify-center shadow-md text-2xl transition transform active:scale-95"
-                        title="Reset Form"
-                    >
-                        +
-                    </button>
-                </div>
-
-            </form>
+          </form>
         </div>
-
       </main>
     </div>
   );
 };
+
+/* Small helper layout */
+const Field = ({ label, children }: any) => (
+  <div className="grid grid-cols-12 gap-6 items-start">
+    <label className="col-span-3 text-right text-xs font-bold uppercase text-gray-500 tracking-wide pt-3">
+      {label}
+    </label>
+    <div className="col-span-9">{children}</div>
+  </div>
+);
+
+/* Tailwind shortcut */
+const input =
+  "w-full p-3 rounded-lg bg-gray-100 focus:bg-white border border-transparent focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition";
 
 export default BatchEntry;

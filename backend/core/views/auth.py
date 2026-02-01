@@ -1,12 +1,19 @@
+# FILE: backend/core/views/auth.py
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
-from core.models import User, Role, Employee
+from django.contrib.auth import authenticate
+from django.db import transaction  # The "Safety Switch"
+from core.models import User, Employee, Customer, RoleType, Outlet
 from core.permissions import IsAdmin
 
 
+# ==========================================
+# 1. LOGIN (Universal)
+# ==========================================
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -14,51 +21,127 @@ class LoginView(APIView):
         username = request.data.get('username')
         password = request.data.get('password')
 
-        try:
-            user = User.objects.get(username=username)
-            if user.password_hash == password:
-                refresh = RefreshToken.for_user(user)
-                role_name = user.role.role_name if user.role else "EMPLOYEE"
+        # Django checks the DB and Password Hash automatically
+        user = authenticate(username=username, password=password)
 
-                return Response({
-                    'token': str(refresh.access_token),
-                    'user': {'username': user.username, 'role': role_name}
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_401_UNAUTHORIZED)
+        if user is not None:
+            # 1. Generate the Key (Token)
+            refresh = RefreshToken.for_user(user)
+
+            # 2. Prepare the data to send back
+            response_data = {
+                'token': str(refresh.access_token),
+                'user': {
+                    'username': user.username,
+                    'role': user.role,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name
+                }
+            }
+
+            # 3. If it's a Staff member, send their Outlet ID (Useful for POS)
+            if user.is_employee:
+                try:
+                    # Access the linked profile safely
+                    if hasattr(user, 'employee_profile'):
+                        employee_profile = user.employee_profile
+                        if employee_profile.outlet:
+                            response_data['user']['outlet_id'] = employee_profile.outlet.outlet_id
+                            response_data['user']['outlet_name'] = employee_profile.outlet.outlet_name
+                except Employee.DoesNotExist:
+                    pass
+
+            return Response(response_data, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-class EmployeeRegisterView(APIView):
-    permission_classes = [IsAdmin]
+# ==========================================
+# 2. CUSTOMER REGISTRATION (Self-Service)
+# ==========================================
+class CustomerRegisterView(APIView):
+    permission_classes = [AllowAny]  # Open to the public
 
     def post(self, request):
+        data = request.data
+
+        # Check if username exists
+        if User.objects.filter(username=data['username']).exists():
+            return Response({"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            data = request.data
-            role_name = data.get('role', 'SALESPERSON')
-            role, _ = Role.objects.get_or_create(role_name=role_name)
+            with transaction.atomic():  # <--- Start Safety Block
 
-            if User.objects.filter(username=data['username']).exists():
-                return Response({"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST)
+                # 1. Create the Login User
+                user = User.objects.create_user(
+                    username=data['username'],
+                    email=data.get('email'),
+                    password=data['password'],
+                    first_name=data.get('first_name'),
+                    last_name=data.get('last_name'),
+                    role=RoleType.CUSTOMER  # Force role to Customer
+                )
 
-            user = User.objects.create(
-                username=data['username'],
-                email=data['email'],
-                password_hash=data['password'],
-                role=role,
-                is_active=True
-            )
+                # 2. Create the Customer Profile
+                Customer.objects.create(
+                    user=user,
+                    address=data.get('address', ''),
+                    loyalty_points=0
+                )
 
-            Employee.objects.create(
-                user=user,
-                first_name=data['first_name'],
-                last_name=data['last_name'],
-                nic=data['nic'],
-                contact_no=data['contact_no'],
-                hire_date=data['hire_date']
-            )
+            return Response({"message": "Account created successfully!"}, status=status.HTTP_201_CREATED)
 
-            return Response({"message": "Employee created successfully"}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ==========================================
+# 3. EMPLOYEE CREATION (Admin Only)
+# ==========================================
+class EmployeeCreateView(APIView):
+    permission_classes = [IsAdmin]  # Only Admin can hire people
+
+    def post(self, request):
+        data = request.data
+
+        if User.objects.filter(username=data['username']).exists():
+            return Response({"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with transaction.atomic():
+                # 1. Create the Login User
+                # Default to SALESPERSON if role is missing
+                role_to_assign = data.get('role', RoleType.SALESPERSON)
+
+                user = User.objects.create_user(
+                    username=data['username'],
+                    email=data.get('email'),
+                    password=data['password'],
+                    first_name=data.get('first_name'),
+                    last_name=data.get('last_name'),
+                    role=role_to_assign,
+                    is_active=True
+                )
+
+                # 2. Find the Outlet (Shop) they work at
+                outlet_instance = None
+                if 'outlet_id' in data:
+                    try:
+                        outlet_instance = Outlet.objects.get(pk=data['outlet_id'])
+                    except Outlet.DoesNotExist:
+                        return Response({"error": "Outlet not found"}, status=status.HTTP_404_NOT_FOUND)
+
+                # 3. Create the Employee Profile
+                Employee.objects.create(
+                    user=user,
+                    nic=data['nic'],
+                    hire_date=data.get('hire_date', '2024-01-01'),
+                    outlet=outlet_instance
+                )
+
+            return Response({"message": f"Employee {data['username']} created successfully!"},
+                            status=status.HTTP_201_CREATED)
+
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

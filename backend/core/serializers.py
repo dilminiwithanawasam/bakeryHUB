@@ -3,6 +3,8 @@ from .models import Product, Batch, OutletStock
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Product
         fields = [
@@ -17,16 +19,33 @@ class ProductSerializer(serializers.ModelSerializer):
         ]
 
 
+
+from rest_framework import serializers
+from core.models import Batch, Product
+
 class BatchCreateSerializer(serializers.ModelSerializer):
-    """
-    Serializer specifically for CREATING batches.
-    It expects a 'product_id' (integer) which comes from your dropdown.
-    """
-    product_id = serializers.IntegerField()
+    # Map product_id → product (FK)
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(),
+        source='product'
+    )
+
+    # Map frontend names → model names
+    batch_code = serializers.CharField(source='batch_no')
+    quantity = serializers.IntegerField(source='quantity_produced')
+    mfd = serializers.DateField(source='manufactured_date')
+    exp = serializers.DateField(source='expiry_date')
 
     class Meta:
         model = Batch
-        fields = ['batch_no', 'product_id', 'quantity_produced', 'manufactured_date', 'expiry_date']
+        fields = [
+            'batch_code',
+            'product_id',
+            'quantity',
+            'mfd',
+            'exp'
+        ]
+
 
 
 class BatchSerializer(serializers.ModelSerializer):
