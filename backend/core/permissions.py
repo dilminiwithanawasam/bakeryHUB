@@ -31,3 +31,11 @@ class IsCustomer(BasePermission):
     """
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and request.user.role == RoleType.CUSTOMER)
+
+class IsSalesperson(BasePermission):
+    """
+    Allows access ONLY to Salesperson role.
+    Used for POS system access control.
+    """
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.role == RoleType.SALESPERSON)

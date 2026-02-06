@@ -1,0 +1,910 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}BakeryHUB POS System{% endblock %}
+
+{% block extra_css %}
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #f5f5f5;
+        color: #333;
+    }
+
+    .pos-container {
+        display: flex;
+        height: 100vh;
+        background: #ffffff;
+        overflow: hidden;
+    }
+
+    /* ==========================================
+       LEFT PANEL: PRODUCT SELECTION
+       ========================================== */
+    .pos-left {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #e0e0e0;
+        background: #fafafa;
+        overflow: hidden;
+    }
+
+    .pos-header {
+        padding: 16px;
+        background: #2c3e50;
+        color: white;
+        border-bottom: 2px solid #34495e;
+    }
+
+    .pos-header h1 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .pos-header p {
+        font-size: 13px;
+        opacity: 0.9;
+    }
+
+    .pos-search {
+        padding: 12px 16px;
+        background: white;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d0d0d0;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+    }
+
+    .category-tabs {
+        display: flex;
+        gap: 0;
+        padding: 0;
+        background: white;
+        border-bottom: 1px solid #e0e0e0;
+        overflow-x: auto;
+    }
+
+    .category-btn {
+        flex: 0 0 auto;
+        padding: 12px 16px;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: #666;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+
+    .category-btn:hover {
+        background: #f5f5f5;
+        color: #2c3e50;
+    }
+
+    .category-btn.active {
+        color: #2c3e50;
+        border-bottom-color: #3498db;
+        background: #f9f9f9;
+    }
+
+    .products-grid {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+        align-content: start;
+    }
+
+    .product-btn {
+        padding: 12px;
+        background: white;
+        border: 1px solid #d0d0d0;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.15s;
+        font-size: 12px;
+    }
+
+    .product-btn:hover {
+        border-color: #3498db;
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .product-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .product-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 6px;
+        line-height: 1.3;
+    }
+
+    .product-price {
+        font-size: 15px;
+        font-weight: 700;
+        color: #27ae60;
+    }
+
+    /* ==========================================
+       RIGHT PANEL: BILLING
+       ========================================== */
+    .pos-right {
+        width: 380px;
+        display: flex;
+        flex-direction: column;
+        background: white;
+        border-left: 1px solid #e0e0e0;
+    }
+
+    .billing-header {
+        padding: 16px;
+        background: #2c3e50;
+        color: white;
+        border-bottom: 1px solid #34495e;
+    }
+
+    .billing-header h2 {
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .cart-items {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .cart-item {
+        padding: 12px;
+        background: #f9f9f9;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        font-size: 12px;
+    }
+
+    .cart-item-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+
+    .cart-item-name {
+        font-weight: 600;
+        color: #2c3e50;
+        flex: 1;
+    }
+
+    .cart-item-remove {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        padding: 4px 8px;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .cart-item-remove:hover {
+        background: #c0392b;
+    }
+
+    .cart-item-qty {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+
+    .qty-btn {
+        background: #ecf0f1;
+        border: 1px solid #bdc3c7;
+        padding: 4px 8px;
+        cursor: pointer;
+        font-weight: 600;
+        border-radius: 3px;
+        font-size: 12px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.1s;
+    }
+
+    .qty-btn:hover {
+        background: #d5dbdb;
+    }
+
+    .qty-btn:active {
+        transform: scale(0.95);
+    }
+
+    .qty-input {
+        width: 40px;
+        padding: 4px;
+        border: 1px solid #bdc3c7;
+        border-radius: 3px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 12px;
+    }
+
+    .item-total {
+        text-align: right;
+        font-weight: 600;
+        color: #27ae60;
+    }
+
+    /* ==========================================
+       BILLING SUMMARY
+       ========================================== */
+    .billing-summary {
+        padding: 16px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #f9f9f9;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 13px;
+    }
+
+    .summary-label {
+        color: #666;
+        font-weight: 500;
+    }
+
+    .summary-value {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .summary-total {
+        font-size: 16px;
+        font-weight: 700;
+        color: #27ae60;
+        border-top: 1px solid #e0e0e0;
+        padding-top: 10px;
+        margin-top: 10px;
+    }
+
+    .discount-input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #d0d0d0;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    /* ==========================================
+       PAYMENT OPTIONS
+       ========================================== */
+    .payment-section {
+        padding: 16px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #f9f9f9;
+    }
+
+    .payment-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .payment-methods {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .payment-method {
+        flex: 1;
+        padding: 10px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+        color: #666;
+        transition: all 0.2s;
+    }
+
+    .payment-method:hover {
+        border-color: #3498db;
+        background: #ecf7ff;
+    }
+
+    .payment-method.active {
+        background: #d5e8f7;
+        border-color: #3498db;
+        color: #2c3e50;
+    }
+
+    .tendered-box {
+        margin-bottom: 12px;
+    }
+
+    .tendered-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #d0d0d0;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .change-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        font-weight: 600;
+        color: #27ae60;
+    }
+
+    /* ==========================================
+       ACTION BUTTONS
+       ========================================== */
+    .action-buttons {
+        padding: 12px;
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .btn-clear {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .btn-clear:hover {
+        background: #7f8c8d;
+    }
+
+    .btn-complete {
+        background: #27ae60;
+        color: white;
+        flex: 2;
+    }
+
+    .btn-complete:hover {
+        background: #229954;
+    }
+
+    .btn-complete:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .btn-complete:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+
+    /* ==========================================
+       UTILITIES
+       ========================================== */
+    .empty-cart {
+        text-align: center;
+        color: #999;
+        padding: 40px 20px;
+        font-size: 13px;
+    }
+
+    .loading {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .alert {
+        padding: 12px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .alert-info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+    }
+
+    /* ==========================================
+       RESPONSIVE
+       ========================================== */
+    @media (max-width: 1024px) {
+        .products-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        }
+        
+        .pos-right {
+            width: 320px;
+        }
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #bdc3c7;
+        border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #95a5a6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-container">
+    <!-- LEFT: PRODUCT SELECTION -->
+    <div class="pos-left">
+        <div class="pos-header">
+            <h1>{{ outlet.outlet_name }}</h1>
+            <p>{{ user.get_full_name }} | {{ user.email }}</p>
+        </div>
+
+        <div class="pos-search">
+            <input type="text" 
+                   id="searchInput" 
+                   class="search-input"
+                   placeholder="Search products...">
+        </div>
+
+        <div class="category-tabs">
+            <button class="category-btn active" data-category="all">All</button>
+            {% for category, _ in categories.items %}
+                <button class="category-btn" data-category="{{ category }}">{{ category }}</button>
+            {% endfor %}
+        </div>
+
+        <div class="products-grid" id="productsGrid">
+            {% for product in all_products %}
+                <button class="product-btn" data-product-id="{{ product.product_id }}" data-price="{{ product.base_price }}">
+                    <div class="product-name">{{ product.product_name }}</div>
+                    <div class="product-price">Rs. {{ product.base_price }}</div>
+                </button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- RIGHT: BILLING PANEL -->
+    <div class="pos-right">
+        <div class="billing-header">
+            <h2>Billing</h2>
+        </div>
+
+        <div id="alertBox"></div>
+
+        <div class="cart-items" id="cartItems">
+            <div class="empty-cart">Cart is empty</div>
+        </div>
+
+        <div class="billing-summary">
+            <div class="summary-row">
+                <span class="summary-label">Subtotal:</span>
+                <span class="summary-value" id="subtotal">0.00</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Discount:</span>
+                <input type="number" id="discountInput" class="discount-input" value="0" min="0">
+            </div>
+            <div class="summary-row summary-total">
+                <span>Total:</span>
+                <span id="totalAmount">0.00</span>
+            </div>
+        </div>
+
+        <div class="payment-section">
+            <div class="payment-label">Payment Method</div>
+            <div class="payment-methods">
+                <button class="payment-method active" data-method="CASH">Cash</button>
+                <button class="payment-method" data-method="CARD">Card</button>
+                <button class="payment-method" data-method="ONLINE_TRANSFER">Advance</button>
+            </div>
+
+            <div class="tendered-box">
+                <div class="payment-label">Tendered Amount</div>
+                <input type="number" id="tenderedInput" class="tendered-input" placeholder="0.00" value="0">
+            </div>
+
+            <div class="change-row">
+                <span>Change:</span>
+                <span id="changeAmount">0.00</span>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-clear" id="clearBtn">Clear</button>
+            <button class="btn btn-complete" id="completeBtn" disabled>Complete Sale</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ==========================================
+// POS SYSTEM - Minimal JavaScript
+// ==========================================
+
+class POSManager {
+    constructor() {
+        this.cart = {};  // { productId: { name, price, qty } }
+        this.selectedPayment = 'CASH';
+        this.csrfToken = this.getCsrfToken();
+        this.init();
+    }
+
+    getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
+
+    init() {
+        this.attachEventListeners();
+        this.updateUI();
+    }
+
+    attachEventListeners() {
+        // Product button clicks
+        document.querySelectorAll('.product-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.addToCart(btn));
+        });
+
+        // Category filter
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.filterByCategory(btn));
+        });
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            this.search(e.target.value);
+        });
+
+        // Discount changes
+        document.getElementById('discountInput').addEventListener('change', () => {
+            this.updateTotals();
+        });
+
+        // Tendered amount changes
+        document.getElementById('tenderedInput').addEventListener('input', () => {
+            this.updateChange();
+        });
+
+        // Payment method
+        document.querySelectorAll('.payment-method').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.payment-method').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.selectedPayment = btn.dataset.method;
+            });
+        });
+
+        // Clear cart
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('Clear all items?')) {
+                this.cart = {};
+                this.updateUI();
+            }
+        });
+
+        // Complete sale
+        document.getElementById('completeBtn').addEventListener('click', () => {
+            this.completeSale();
+        });
+    }
+
+    addToCart(btn) {
+        const productId = parseInt(btn.dataset.productId);
+        const productName = btn.querySelector('.product-name').textContent;
+        const price = parseFloat(btn.dataset.price);
+
+        if (this.cart[productId]) {
+            this.cart[productId].qty++;
+        } else {
+            this.cart[productId] = {
+                name: productName,
+                price: price,
+                qty: 1
+            };
+        }
+
+        this.updateUI();
+        this.showMessage('Added to cart', 'success');
+    }
+
+    removeFromCart(productId) {
+        delete this.cart[productId];
+        this.updateUI();
+    }
+
+    updateQty(productId, newQty) {
+        if (newQty <= 0) {
+            this.removeFromCart(productId);
+        } else {
+            this.cart[productId].qty = newQty;
+            this.updateUI();
+        }
+    }
+
+    updateUI() {
+        this.renderCart();
+        this.updateTotals();
+    }
+
+    renderCart() {
+        const cartDiv = document.getElementById('cartItems');
+        
+        if (Object.keys(this.cart).length === 0) {
+            cartDiv.innerHTML = '<div class="empty-cart">Cart is empty</div>';
+            document.getElementById('completeBtn').disabled = true;
+            return;
+        }
+
+        let html = '';
+        for (const [productId, item] of Object.entries(this.cart)) {
+            const itemTotal = item.price * item.qty;
+            html += `
+                <div class="cart-item">
+                    <div class="cart-item-header">
+                        <span class="cart-item-name">${item.name}</span>
+                        <button class="cart-item-remove" onclick="pos.removeFromCart(${productId})">Remove</button>
+                    </div>
+                    <div class="cart-item-qty">
+                        <button class="qty-btn" onclick="pos.updateQty(${productId}, ${item.qty - 1})">−</button>
+                        <input type="number" class="qty-input" value="${item.qty}" min="1" 
+                               onchange="pos.updateQty(${productId}, parseInt(this.value))">
+                        <button class="qty-btn" onclick="pos.updateQty(${productId}, ${item.qty + 1})">+</button>
+                    </div>
+                    <div style="text-align: right; font-size: 12px; color: #666;">
+                        Rs. ${item.price.toFixed(2)} × ${item.qty} = 
+                        <span class="item-total">Rs. ${itemTotal.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+        }
+        cartDiv.innerHTML = html;
+        document.getElementById('completeBtn').disabled = false;
+    }
+
+    updateTotals() {
+        let subtotal = 0;
+        for (const item of Object.values(this.cart)) {
+            subtotal += item.price * item.qty;
+        }
+
+        const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+        const total = Math.max(0, subtotal - discount);
+
+        document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+        document.getElementById('totalAmount').textContent = total.toFixed(2);
+        
+        this.updateChange();
+    }
+
+    updateChange() {
+        const totalAmount = parseFloat(document.getElementById('totalAmount').textContent) || 0;
+        const tendered = parseFloat(document.getElementById('tenderedInput').value) || 0;
+        const change = Math.max(0, tendered - totalAmount);
+        
+        document.getElementById('changeAmount').textContent = change.toFixed(2);
+    }
+
+    filterByCategory(btn) {
+        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const category = btn.dataset.category;
+        const productBtns = document.querySelectorAll('.product-btn');
+
+        productBtns.forEach(pBtn => {
+            if (category === 'all') {
+                pBtn.style.display = '';
+            } else {
+                const productCategory = pBtn.dataset.category || 'Uncategorized';
+                pBtn.style.display = productCategory === category ? '' : 'none';
+            }
+        });
+    }
+
+    search(query) {
+        query = query.toLowerCase();
+        document.querySelectorAll('.product-btn').forEach(btn => {
+            const name = btn.querySelector('.product-name').textContent.toLowerCase();
+            btn.style.display = name.includes(query) ? '' : 'none';
+        });
+    }
+
+    async completeSale() {
+        if (Object.keys(this.cart).length === 0) {
+            this.showMessage('Cart is empty', 'error');
+            return;
+        }
+
+        const subtitle = this.getSubtotal();
+        const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+        const total = subtitle - discount;
+        const tendered = parseFloat(document.getElementById('tenderedInput').value) || 0;
+
+        if (tendered < total) {
+            if (!confirm(`Tendered amount (${tendered}) is less than total (${total}). Continue?`)) {
+                return;
+            }
+        }
+
+        // Prepare items
+        const items = [];
+        for (const [productId, item] of Object.entries(this.cart)) {
+            items.push({
+                product_id: parseInt(productId),
+                quantity: item.qty,
+                unit_price: item.price
+            });
+        }
+
+        // Disable button and show loading
+        const btn = document.getElementById('completeBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading"></span> Processing...';
+
+        try {
+            const response = await fetch('/api/pos/complete-sale/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.csrfToken,
+                    'Authorization': 'Bearer ' + this.getToken()
+                },
+                body: JSON.stringify({
+                    items: items,
+                    discount_amount: discount,
+                    payment_method: this.selectedPayment,
+                    tendered_amount: tendered
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Sale failed');
+            }
+
+            // Success
+            this.showMessage(
+                `Sale completed! Bill: ${data.bill_no} | Change: Rs. ${data.change_amount.toFixed(2)}`,
+                'success'
+            );
+
+            // Reset cart
+            setTimeout(() => {
+                this.cart = {};
+                document.getElementById('discountInput').value = '0';
+                document.getElementById('tenderedInput').value = '0';
+                this.updateUI();
+                
+                // Print receipt (optional)
+                this.printReceipt(data);
+            }, 1500);
+
+        } catch (error) {
+            this.showMessage(`Error: ${error.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Complete Sale';
+        }
+    }
+
+    getSubtotal() {
+        let subtotal = 0;
+        for (const item of Object.values(this.cart)) {
+            subtotal += item.price * item.qty;
+        }
+        return subtotal;
+    }
+
+    showMessage(msg, type) {
+        const alertBox = document.getElementById('alertBox');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = msg;
+        alertBox.innerHTML = '';
+        alertBox.appendChild(alert);
+
+        setTimeout(() => {
+            alert.remove();
+        }, 4000);
+    }
+
+    getToken() {
+        return localStorage.getItem('token') || '';
+    }
+
+    printReceipt(saleData) {
+        // Optional: Implement receipt printing
+        console.log('Sale completed:', saleData);
+    }
+}
+
+// Initialize POS
+const pos = new POSManager();
+</script>
+{% endblock %}

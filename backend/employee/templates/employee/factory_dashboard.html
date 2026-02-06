@@ -1,0 +1,47 @@
+{% extends 'employee/base.html' %}
+{% block title %}Factory Manager{% endblock %}
+{% block content %}
+  <div>
+    <h2>Factory Manager Dashboard</h2>
+
+    <div style="margin-top:16px;">
+      <h3 class="muted">Products</h3>
+      <table>
+        <tr><th>Product</th><th>Category</th><th>Price</th></tr>
+        {% for p in products %}
+          <tr><td>{{ p.product_name }}</td><td>{{ p.category }}</td><td>Rs. {{ p.base_price }}</td></tr>
+        {% empty %}
+          <tr><td colspan="3">No products</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+
+    <div style="margin-top:18px;">
+      <h3 class="muted">Orders grouped by Outlet</h3>
+      {% for outlet, orders in orders_by_outlet.items %}
+        <h4 style="margin-top:8px;">{{ outlet }} ({{ orders|length }})</h4>
+        <table>
+          <tr><th>Order</th><th>Customer</th><th>Pickup</th><th>Status</th><th>Actions</th></tr>
+          {% for o in orders %}
+            <tr>
+              <td>#{{ o.order_id }}</td>
+              <td>{{ o.customer.user.username }}</td>
+              <td>{{ o.pickup_date }}</td>
+              <td>{{ o.status }}</td>
+              <td>
+                <form action="/employee/orders/{{ o.order_id }}/update-status/" method="post" style="display:inline">{% csrf_token %}
+                  <select name="status">
+                    <option value="PREPARING">Preparing</option>
+                    <option value="READY_FOR_PICKUP">Ready for pickup</option>
+                    <option value="DISPATCHED">Dispatched</option>
+                  </select>
+                  <button class="btn" type="submit">Update</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </table>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

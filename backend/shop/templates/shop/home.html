@@ -1,0 +1,45 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}Shop - Home{% endblock %}
+
+{% block content %}
+  <h1 class="title">Shop</h1>
+
+  <div class="columns">
+    <div class="column">
+      <form method="get" class="field has-addons">
+        <div class="control">
+          <input class="input" name="q" placeholder="Search products" value="{{ request.GET.q }}">
+        </div>
+        <div class="control">
+          <button class="button is-info">Search</button>
+        </div>
+      </form>
+    </div>
+    <div class="column is-narrow">
+      <div class="buttons">
+        <a class="button" href="?category=Bread">Bread</a>
+        <a class="button" href="?category=Cake">Cake</a>
+        <a class="button" href="?category=Beverages">Beverages</a>
+        <a class="button" href="/">All</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="columns is-multiline">
+    {% for product in products %}
+      <div class="column is-one-quarter">
+        <div class="card">
+          <div class="card-content">
+            <p class="title is-4">{{ product.product_name }}</p>
+            <p class="subtitle is-6">{{ product.category }}</p>
+            <p class="title is-5">₦{{ product.base_price }}</p>
+            <a class="button is-link" href="{% url 'shop:product-detail' product.product_id %}">View</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p>No products available.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

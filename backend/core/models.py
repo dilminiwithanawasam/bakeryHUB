@@ -57,7 +57,10 @@ class User(AbstractUser):
         choices=RoleType.choices,
         default=RoleType.CUSTOMER
     )
+
+    # Legacy field kept for backward compatibility; prefer contact_number
     phone_number = models.CharField(max_length=20, blank=True, null=True)
+    contact_number = models.CharField(max_length=20, blank=True, null=True)
 
     class Meta:
         db_table = 'users'
@@ -65,6 +68,36 @@ class User(AbstractUser):
     @property
     def is_employee(self):
         return self.role in [RoleType.ADMIN, RoleType.OWNER, RoleType.MANAGER, RoleType.FACTORY_MANAGER, RoleType.SALESPERSON]
+
+    @property
+    def is_admin(self):
+        return self.role == RoleType.ADMIN
+
+    @property
+    def is_customer(self):
+        return self.role == RoleType.CUSTOMER
+
+    # Note: Do NOT declare @property for `is_staff` or `is_superuser` here.
+    # Those names are already model fields on AbstractUser; overriding them
+    # with properties prevents Django from assigning boolean values and
+    # breaks user creation. The DB fields will be kept in sync in `save()` below.
+
+    def save(self, *args, **kwargs):
+        # Keep DB fields `is_staff` and `is_superuser` in sync with `role`.
+        try:
+            self.is_staff = (self.role == RoleType.ADMIN)
+            self.is_superuser = (self.role == RoleType.ADMIN)
+        except Exception:
+            # During some migration operations these attributes may not be
+            # available; ignore and continue so migrations don't fail.
+            pass
+
+        super().save(*args, **kwargs)
+
+    @property
+    def contact(self):
+        """Return the preferred contact number (new field falling back to legacy phone_number)."""
+        return self.contact_number or self.phone_number
 
     def __str__(self):
         return f"{self.username} ({self.role})"

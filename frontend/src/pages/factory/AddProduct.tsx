@@ -6,6 +6,8 @@ import api from '../../api/axios';
 const AddProduct = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [formData, setFormData] = useState({
     product_name: '',
@@ -16,6 +18,9 @@ const AddProduct = () => {
     measurement_type: 'PCS'
   });
 
+  // Pre-defined categories to choose from (improves UX and keeps product taxonomy consistent)
+  const categoriesList = ['Bread', 'Cake', 'Beverages', 'Pastry', 'Savory'];
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -25,15 +30,32 @@ const AddProduct = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
 
     try {
       await api.post('/products/', formData);
-      alert('✅ Product Created Successfully!');
-      navigate('/factory/BatchEntry');
+      setSuccessMessage('✅ Product Created Successfully!');
+      
+      // Reset form
+      setFormData({
+        product_name: '',
+        description: '',
+        category: '',
+        base_price: '',
+        shelf_life_days: '',
+        measurement_type: 'PCS'
+      });
+      
+      // Redirect to product list after 1.5 seconds
+          setTimeout(() => {
+            navigate('/factory-manager/products');
+      }, 1500);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 'Failed to create product.';
+      const errorMessage = error.response?.data?.error || error.response?.data?.detail || 'Failed to create product.';
       const errorDetails = error.response?.data?.details || '';
-      alert(`❌ ${errorMessage}\n${errorDetails}`);
+      setErrorMessage(`❌ ${errorMessage}${errorDetails ? '\n' + errorDetails : ''}`);
+      console.error('Product creation error:', error);
     } finally {
       setLoading(false);
     }
@@ -43,7 +65,7 @@ const AddProduct = () => {
     <div className="flex min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100">
       <Sidebar />
 
-      <main className="flex-1 ml-64 p-12">
+      <main className="flex-1 ml-64 p-12 overflow-y-auto">
 
         {/* Toggle Tabs */}
         <div className="flex max-w-3xl mb-10 rounded-xl overflow-hidden shadow-md">
@@ -69,7 +91,7 @@ const AddProduct = () => {
             </p>
           </div>
           <button
-            onClick={() => navigate('/factory/ProductList')}
+            onClick={() => navigate('/factory-manager/products')}
             className="text-orange-600 hover:text-orange-800 font-semibold transition underline-offset-4 hover:to-orange-950"
 
           >
@@ -85,6 +107,19 @@ const AddProduct = () => {
               All products created here will be available for batch production.
             </p>
           </div>
+
+          {successMessage && (
+            <div className="mx-10 mt-6 p-4 bg-green-50 border-l-4 border-green-600 text-green-800 rounded-lg">
+              <p className="font-semibold">{successMessage}</p>
+              <p className="text-sm text-green-700">Redirecting to product list...</p>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="mx-10 mt-6 p-4 bg-red-50 border-l-4 border-red-600 text-red-800 rounded-lg whitespace-pre-wrap">
+              <p className="font-semibold">{errorMessage}</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="p-10 space-y-8">
 
@@ -114,14 +149,18 @@ const AddProduct = () => {
             <div className="grid grid-cols-12 gap-6">
               <div className="col-span-6">
                 <FieldInline label="Category">
-                  <input
+                  <select
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
-                    className="input"
-                    placeholder="Cakes"
+                    className="input cursor-pointer"
                     required
-                  />
+                  >
+                    <option value="">Select category</option>
+                    {categoriesList.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </FieldInline>
               </div>
 
@@ -224,8 +263,5 @@ const FieldInline = ({ label, children }: any) => (
     <div className="col-span-8">{children}</div>
   </div>
 );
-
-const input =
-  "w-full p-3 rounded-lg bg-gray-100 focus:bg-white border border-transparent focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition";
 
 export default AddProduct;

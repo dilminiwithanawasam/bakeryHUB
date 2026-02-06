@@ -1,0 +1,14 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}{{ product.product_name }} - Details{% endblock %}
+
+{% block content %}
+  <h1 class="title">{{ product.product_name }}</h1>
+  <div class="box">
+    <p><strong>Category:</strong> {{ product.category }}</p>
+    <p><strong>Price:</strong> ₦{{ product.base_price }}</p>
+    <p><strong>Description:</strong></p>
+    <div>{{ product.description|linebreaks }}</div>
+  </div>
+  <a class="button is-primary" href="#">Add to cart</a>
+{% endblock %}

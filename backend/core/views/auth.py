@@ -36,7 +36,8 @@ class LoginView(APIView):
                     'role': user.role,
                     'email': user.email,
                     'first_name': user.first_name,
-                    'last_name': user.last_name
+                    'last_name': user.last_name,
+                    'contact_number': user.contact
                 }
             }
 
@@ -66,21 +67,50 @@ class CustomerRegisterView(APIView):
     def post(self, request):
         data = request.data
 
-        # Check if username exists
-        if User.objects.filter(username=data['username']).exists():
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get('email')
+        contact = data.get('contact_number') or data.get('contact') or data.get('phone_number')
+
+        # Basic presence checks
+        if not username or not password:
+            return Response({"error": "username and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Unique username
+        if User.objects.filter(username=username).exists():
             return Response({"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Email validations
+        if email:
+            if User.objects.filter(email=email).exists():
+                return Response({"error": "Email already in use"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Contact number required and unique
+        if not contact:
+            return Response({"error": "contact_number is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(contact_number=contact).exists() or User.objects.filter(phone_number=contact).exists():
+            return Response({"error": "Contact number already in use"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Strong password validation
+        from django.contrib.auth.password_validation import validate_password
+        try:
+            validate_password(password)
+        except Exception as e:
+            # validate_password can return a list of errors or raise ValidationError
+            return Response({"error": "; ".join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             with transaction.atomic():  # <--- Start Safety Block
 
                 # 1. Create the Login User
                 user = User.objects.create_user(
-                    username=data['username'],
-                    email=data.get('email'),
-                    password=data['password'],
+                    username=username,
+                    email=email,
+                    password=password,
                     first_name=data.get('first_name'),
                     last_name=data.get('last_name'),
-                    role=RoleType.CUSTOMER  # Force role to Customer
+                    role=RoleType.CUSTOMER,  # Force role to Customer
+                    contact_number=contact
                 )
 
                 # 2. Create the Customer Profile

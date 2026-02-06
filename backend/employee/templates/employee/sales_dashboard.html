@@ -1,0 +1,30 @@
+{% extends 'employee/base.html' %}
+{% block title %}Sales Dashboard{% endblock %}
+{% block content %}
+  <div>
+    <h2>Salesperson Dashboard</h2>
+    <p class="muted">Outlet: {{ outlet.outlet_name }}</p>
+
+    <div style="margin-top:16px;">
+      <h3 class="muted">Orders</h3>
+      <table>
+        <tr><th>Order</th><th>Customer</th><th>Pickup</th><th>Status</th><th>Actions</th></tr>
+        {% for o in orders %}
+          <tr>
+            <td>#{{ o.order_id }}</td>
+            <td>{{ o.customer.user.username }}</td>
+            <td>{{ o.pickup_date }}</td>
+            <td>{{ o.status }}</td>
+            <td>
+              <form action="/employee/orders/{{ o.order_id }}/mark-received/" method="post">{% csrf_token %}
+                <button class="btn" type="submit">Mark ready & Notify</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5">No orders found</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+{% endblock %}

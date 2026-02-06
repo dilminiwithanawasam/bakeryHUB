@@ -1,69 +1,105 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BarChart2, Bell, Truck, Package, LogOut } from 'lucide-react';
-import logo from '../assets/bakeryHUB.png'; 
-
+import { Menu, X, LogOut, Clock } from 'lucide-react';
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
- 
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [currentTime, setCurrentTime] = useState<string>('');
+  const [currentDate, setCurrentDate] = useState<string>('');
 
-  const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/factory' },
-    { name: 'Outlet Monitor', icon: BarChart2, path: '/factory/monitor' },
-    { name: 'Notifications', icon: Bell, path: '/factory/notifications' },
-    { name: 'Dispatch HUB', icon: Truck, path: '/factory/dispatch' },
-    { name: 'Production entry', icon: Package, path: '/factory/production' },
-  ];
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setCurrentDate(now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+    };
+
+    updateDateTime();
+    const timer = setInterval(updateDateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
+  const isActive = (path: string) => location.pathname === path;
+
+  const navItems = [
+    { label: 'Dashboard', path: '/factory-manager', icon: '📊' },
+    { label: 'Batches', path: '/factory-manager/batches', icon: '📦' },
+    { label: 'Outlet Orders', path: '/factory-manager/outlet-orders', icon: '🚚' },
+    { label: 'Customer Orders', path: '/factory-manager/customer-orders', icon: '🛒' },
+    { label: 'Outlet Monitor', path: '/factory-manager/outlet-monitor', icon: '📡' },
+    { label: 'Products', path: '/factory-manager/products', icon: '🍰' },
+  ];
+
   return (
-    // ✅ Added dark:bg-gray-900 and dark:border-gray-800
-    <div className="w-64 bg-white dark:bg-gray-900 h-screen flex flex-col border-r border-gray-200 dark:border-gray-800 fixed left-0 top-0 z-50 transition-colors duration-300">
-      
-      {/* Logo Section */}
-      <div className="p-6 flex justify-center items-center">
-        <img src={logo} alt="BakeryHUB" className="w-32 h-auto object-contain" />
+    <div
+      className={`${
+        sidebarOpen ? 'w-64' : 'w-20'
+      } bg-gray-900 text-white transition-all duration-300 flex flex-col shadow-lg fixed left-0 top-0 h-screen z-50`}
+    >
+      {/* Logo */}
+      <div className="p-4 border-b border-gray-800 flex items-center justify-between h-20">
+        <h1 className={`font-bold text-lg ${!sidebarOpen && 'hidden'}`}>BakeryHUB</h1>
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-1 hover:bg-gray-800 rounded-lg transition"
+        >
+          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
       </div>
 
+      {/* Role Badge */}
+      {sidebarOpen && (
+        <div className="px-4 py-2 mx-2 mt-2 bg-orange-600 rounded-lg text-xs font-bold text-center">
+          FACTORY MANAGER
+        </div>
+      )}
+
+      {/* Date/Time Display */}
+      {sidebarOpen && (
+        <div className="px-4 py-3 mx-2 mt-2 bg-gray-800 rounded-lg text-xs text-gray-300 text-center border border-gray-700">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Clock size={14} />
+            <span className="font-mono">{currentTime}</span>
+          </div>
+          <div className="text-xs text-gray-400">{currentDate}</div>
+        </div>
+      )}
+
       {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-2 mt-2">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <button
-              key={item.name}
-              onClick={() => navigate(item.path)}
-              // ✅ Added dark mode text/bg colors for active and hover states
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                isActive 
-                  ? 'text-black dark:text-white font-semibold bg-gray-100 dark:bg-gray-800' 
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium'
-              }`}
-            >
-              <item.icon size={22} className={isActive ? "text-black dark:text-white" : "text-gray-500 dark:text-gray-400"} />
-              <span>{item.name}</span>
-            </button>
-          );
-        })}
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        {navItems.map((item) => (
+          <button
+            key={item.path}
+            onClick={() => navigate(item.path)}
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition ${
+              isActive(item.path)
+                ? 'bg-orange-600 text-white'
+                : 'hover:bg-gray-800 text-gray-300 hover:text-white'
+            }`}
+          >
+            <span className="text-lg">{item.icon}</span>
+            <span className={!sidebarOpen ? 'hidden' : ''}>{item.label}</span>
+          </button>
+        ))}
       </nav>
 
-      {/* Bottom Section */}
-      <div className="p-8 space-y-4">
-        <button 
+      {/* Logout */}
+      <div className="p-4 border-t border-gray-800">
+        <button
           onClick={handleLogout}
-          // ✅ Added dark mode colors
-          className="w-full flex items-center gap-4 px-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition font-medium"
+          className="w-full flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-red-600 transition text-gray-300 hover:text-white"
         >
-          <LogOut size={22} />
-          <span>Logout</span>
+          <LogOut size={20} />
+          <span className={!sidebarOpen ? 'hidden' : ''}>Logout</span>
         </button>
-
-        
       </div>
     </div>
   );

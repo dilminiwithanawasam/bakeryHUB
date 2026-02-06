@@ -68,3 +68,46 @@ class OutletStockSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutletStock
         fields = ['stock_id', 'current_quantity', 'batch', 'product_name', 'batch_no', 'price']
+
+
+# ------------------ Orders & Outlets Serializers ------------------
+from core.models import CustomerOrder, CustomerOrderItem, Outlet
+
+
+class CustomerOrderItemSerializer(serializers.ModelSerializer):
+    product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), source='product')
+
+    class Meta:
+        model = CustomerOrderItem
+        fields = ['order_item_id', 'product_id', 'quantity', 'unit_price']
+
+
+class CustomerOrderSerializer(serializers.ModelSerializer):
+    items = CustomerOrderItemSerializer(many=True, source='customerorderitem_set', read_only=True)
+    customer = serializers.CharField(source='customer.user.username', read_only=True)
+    outlet_name = serializers.CharField(source='outlet.outlet_name', read_only=True)
+
+    class Meta:
+        model = CustomerOrder
+        fields = ['order_id', 'customer', 'outlet', 'outlet_name', 'order_date', 'pickup_date', 'status', 'total_amount', 'special_instructions', 'items']
+
+
+class CustomerOrderCreateSerializer(serializers.Serializer):
+    outlet = serializers.IntegerField(required=False)
+    pickup_date = serializers.DateField()
+    special_instructions = serializers.CharField(required=False, allow_blank=True)
+    items = serializers.ListField(child=serializers.DictField())
+
+    def validate_items(self, value):
+        if not isinstance(value, list) or len(value) == 0:
+            raise serializers.ValidationError('Order must contain at least one item')
+        for it in value:
+            if 'product_id' not in it or 'quantity' not in it:
+                raise serializers.ValidationError('Each item requires product_id and quantity')
+        return value
+
+
+class OutletSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Outlet
+        fields = ['outlet_id', 'outlet_name']

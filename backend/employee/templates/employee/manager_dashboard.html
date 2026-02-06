@@ -1,0 +1,23 @@
+{% extends 'employee/base.html' %}
+{% block title %}Manager Dashboard{% endblock %}
+{% block content %}
+  <div>
+    <h2>Manager Dashboard</h2>
+    <div class="grid two-col" style="margin-top:18px;">
+      <div>
+        <h3 class="muted">Reports</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Total Products</td><td>{{ total_products }}</td></tr>
+          <tr><td>Pending Orders</td><td>{{ pending_orders }}</td></tr>
+          <tr><td>Outlets</td><td>{{ outlets }}</td></tr>
+        </table>
+      </div>
+
+      <aside>
+        <h3 class="muted">Quick Actions</h3>
+        <p><a class="btn" href="/admin/">Open Django Admin</a></p>
+      </aside>
+    </div>
+  </div>
+{% endblock %}

@@ -22,23 +22,18 @@ const BatchEntry = () => {
     return date.toISOString().split('T')[0];
   };
 
-  // Hardcoded categories
-  const hardcodedCategories = [
-    'Cakes',
-    'Brownies',
-    'Pastries',
-    'Breads',
-    'Cookies',
-    'Muffins',
-    'Desserts',
-    'Savory',
-    'Seasonal',
-    'Special'
-  ];
+  // Extract unique categories from products dynamically
+  const getCategories = () => {
+    const categories = new Set(productList.map(p => p.category));
+    return Array.from(categories).sort();
+  };
 
   const [productList, setProductList] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
   const [formData, setFormData] = useState({
@@ -50,23 +45,22 @@ const BatchEntry = () => {
   });
 
   useEffect(() => {
-    // Hardcoded product data instead of API call
-    const hardcodedProducts: Product[] = [
-      { product_id: 1, product_name: 'Chocolate Brownie', shelf_life_days: 7, category: 'Brownies' },
-      { product_id: 2, product_name: 'Vanilla Cake', shelf_life_days: 5, category: 'Cakes' },
-      { product_id: 3, product_name: 'Red Velvet Cake', shelf_life_days: 5, category: 'Cakes' },
-      { product_id: 4, product_name: 'Croissant', shelf_life_days: 3, category: 'Pastries' },
-      { product_id: 5, product_name: 'Whole Wheat Bread', shelf_life_days: 4, category: 'Breads' },
-      { product_id: 6, product_name: 'Blueberry Muffin', shelf_life_days: 4, category: 'Muffins' },
-      { product_id: 7, product_name: 'Chocolate Chip Cookies', shelf_life_days: 14, category: 'Cookies' },
-      { product_id: 8, product_name: 'Cinnamon Roll', shelf_life_days: 3, category: 'Pastries' },
-      { product_id: 9, product_name: 'Baguette', shelf_life_days: 2, category: 'Breads' },
-      { product_id: 10, product_name: 'Carrot Cake', shelf_life_days: 6, category: 'Cakes' },
-    ];
-    
-    setProductList(hardcodedProducts);
-    setFilteredProducts(hardcodedProducts); // Initially show all products
+    fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/products/');
+      setProductList(response.data);
+      setFilteredProducts(response.data);
+    } catch (error: any) {
+      console.error('Failed to fetch products:', error);
+      alert('⚠️ Could not load products from backend. Please check your connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter products when category changes
   useEffect(() => {
@@ -125,7 +119,9 @@ const BatchEntry = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
+    setErrorMessage('');
+    setSuccessMessage('');
 
     try {
       await api.post('/factory/create-batch/', {
@@ -136,7 +132,7 @@ const BatchEntry = () => {
         exp: formData.exp
       });
 
-      alert('✅ Batch Added Successfully!');
+      setSuccessMessage('✅ Batch Added Successfully!');
       setFormData({
         product_id: '',
         batch_code: '',
@@ -144,10 +140,17 @@ const BatchEntry = () => {
         mfd: getTodayDate(),
         exp: ''
       });
+      
+      // Redirect after 1.5 seconds
+      setTimeout(() => {
+        navigate('/factory-manager/batches');
+      }, 1500);
     } catch (error: any) {
-      alert(`❌ ${error.response?.data?.error || 'Failed to add batch'}`);
+      const errorMsg = error.response?.data?.error || error.response?.data?.detail || 'Failed to add batch';
+      setErrorMessage(`❌ ${errorMsg}`);
+      console.error('Batch creation error:', error);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -155,7 +158,7 @@ const BatchEntry = () => {
     <div className="flex min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100">
       <Sidebar />
 
-      <main className="flex-1 ml-64 p-12">
+      <main className="flex-1 ml-64 p-12 overflow-y-auto">
 
         {/* Tabs */}
         <div className="flex max-w-3xl mb-10 rounded-xl overflow-hidden shadow-md">
@@ -177,7 +180,7 @@ const BatchEntry = () => {
           </h1>
           <div className="flex gap-3">
             <button
-              onClick={() => navigate('/factory/BatchList')}
+              onClick={() => navigate('/factory-manager/batches')}
              className="text-orange-600 font-semibold transition-colors hover:text-orange-800 active:text-red-600 cursor-pointer"
 
             >
@@ -195,6 +198,25 @@ const BatchEntry = () => {
             </p>
           </div>
 
+          {loading && (
+            <div className="mx-10 mt-6 p-4 bg-blue-50 border-l-4 border-blue-600 text-blue-800 rounded-lg">
+              <p className="font-semibold">Loading products from backend...</p>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mx-10 mt-6 p-4 bg-green-50 border-l-4 border-green-600 text-green-800 rounded-lg">
+              <p className="font-semibold">{successMessage}</p>
+              <p className="text-sm text-green-700">Redirecting to batch list...</p>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="mx-10 mt-6 p-4 bg-red-50 border-l-4 border-red-600 text-red-800 rounded-lg">
+              <p className="font-semibold">{errorMessage}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="p-10 space-y-8">
 
             {/* Category Filter */}
@@ -204,9 +226,10 @@ const BatchEntry = () => {
                   value={selectedCategory}
                   onChange={handleCategoryChange}
                   className="input flex-1"
+                  disabled={loading || submitting}
                 >
                   <option value="">All Categories</option>
-                  {hardcodedCategories.map(category => (
+                  {getCategories().map(category => (
                     <option key={category} value={category}>
                       {category}
                     </option>
@@ -215,7 +238,8 @@ const BatchEntry = () => {
                 <button
                   type="button"
                   onClick={() => setSelectedCategory('')}
-                  className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition whitespace-nowrap"
+                  className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={loading || submitting}
                 >
                   Clear Filter
                 </button>
@@ -243,7 +267,7 @@ const BatchEntry = () => {
                   onChange={handleProductChange}
                   className="input"
                   required
-                  disabled={filteredProducts.length === 0}
+                  disabled={filteredProducts.length === 0 || loading || submitting}
                 >
                   <option value="">{filteredProducts.length === 0 ? 'No products in this category' : 'Select product'}</option>
                   {filteredProducts.map(p => (
@@ -321,10 +345,10 @@ const BatchEntry = () => {
             <div className="flex justify-end gap-4 pt-6">
               <button
                 type="submit"
-                disabled={loading || !formData.product_id}
+                disabled={submitting || !formData.product_id || loading}
                 className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-10 py-3 rounded-xl font-bold shadow-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {loading ? 'Saving…' : 'Add Batch'}
+                {submitting ? 'Saving…' : 'Add Batch'}
               </button>
 
               <button
@@ -339,8 +363,9 @@ const BatchEntry = () => {
                   });
                   setSelectedCategory('');
                 }}
-                className="w-12 h-12 rounded-xl bg-gray-200 hover:bg-gray-300 text-xl font-bold shadow transition"
+                className="w-12 h-12 rounded-xl bg-gray-200 hover:bg-gray-300 text-xl font-bold shadow transition disabled:opacity-60 disabled:cursor-not-allowed"
                 title="Reset Form"
+                disabled={loading || submitting}
               >
                 ↺
               </button>
@@ -362,9 +387,5 @@ const Field = ({ label, children }: any) => (
     <div className="col-span-9">{children}</div>
   </div>
 );
-
-/* Tailwind shortcut */
-const input =
-  "w-full p-3 rounded-lg bg-gray-100 focus:bg-white border border-transparent focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition";
 
 export default BatchEntry;

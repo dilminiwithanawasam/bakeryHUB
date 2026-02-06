@@ -1,0 +1,13 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}Order Confirmation{% endblock %}
+
+{% block content %}
+  <h1 class="title">Order Confirmed</h1>
+  <div class="box">
+    <p>Your order #{{ order.order_id }} has been placed.</p>
+    <p>Pickup: {{ order.pickup_date }}</p>
+    <p>Total: ₦{{ order.total_amount }}</p>
+    <a class="button is-link" href="{% url 'shop:dashboard' %}">View My Orders</a>
+  </div>
+{% endblock %}

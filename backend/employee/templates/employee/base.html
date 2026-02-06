@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Employee Portal{% endblock %} - BakeryHUB</title>
+    <style>
+      /* Minimal neutral styling for a professional admin look */
+      body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:#f6f7f9; color:#222; margin:0; }
+      .container{ max-width:1100px; margin:28px auto; background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(16,24,40,0.08); padding:20px; }
+      header{ display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:12px; margin-bottom:18px }
+      nav a{ color:#374151; margin-right:12px; text-decoration:none; font-weight:600 }
+      .muted{ color:#6b7280 }
+      .grid{ display:grid; gap:12px }
+      .two-col{ grid-template-columns: 1fr 320px }
+      table{ width:100%; border-collapse:collapse }
+      th,td{ padding:10px; border-bottom:1px solid #f3f4f6; text-align:left }
+      .btn{ padding:8px 12px; background:#111827; color:#fff; border-radius:6px; text-decoration:none; }
+      .btn-outline{ background:transparent; border:1px solid #d1d5db; color:#111827 }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div>
+          <strong>BakeryHUB</strong>
+          <div class="muted">Employee Portal</div>
+        </div>
+        <nav>
+          <a href="/employee/">Home</a>
+          <a href="/employee/manager/">Manager</a>
+          <a href="/employee/factory/">Factory</a>
+          <a href="/employee/sales/">Sales</a>
+          <span class="muted">{{ user.username }}</span>
+        </nav>
+      </header>
+
+      {% block content %}{% endblock %}
+
+      <footer class="muted" style="margin-top:20px; font-size:13px;">© {{ year }} BakeryHUB</footer>
+    </div>
+  </body>
+</html>

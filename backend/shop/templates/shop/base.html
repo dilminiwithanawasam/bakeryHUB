@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Shop - BakeryHUB{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  </head>
+  <body>
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+      <div class="navbar-brand">
+        <a class="navbar-item" href="{% url 'shop:home' %}">
+          BakeryHub
+        </a>
+      </div>
+
+      <div class="navbar-menu">
+        <div class="navbar-start">
+          <a class="navbar-item" href="{% url 'shop:home' %}">Home</a>
+        </div>
+        <div class="navbar-end">
+          {% if request.user.is_authenticated and request.user.role == 'CUSTOMER' %}
+            <a class="navbar-item" href="{% url 'shop:dashboard' %}">My Orders</a>
+            <a class="navbar-item" href="{% url 'shop:logout' %}">Logout</a>
+          {% else %}
+            <a class="navbar-item" href="{% url 'shop:login' %}">Login</a>
+            <a class="navbar-item" href="{% url 'shop:signup' %}">Sign up</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <section class="section">
+      <div class="container">
+        {% if messages %}
+          <div>
+            {% for message in messages %}
+              <div class="notification is-info">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </div>
+    </section>
+  </body>
+</html>
